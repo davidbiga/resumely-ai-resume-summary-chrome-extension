@@ -52,17 +52,35 @@ export function AiContentPage() {
         });
 
         delete configuration.baseOptions.headers['User-Agent'];
-
         const openai = new OpenAIApi(configuration);
+
+        // moderate:
+        const flagged = await openai.createModeration({
+            input: jobDescription
+        });
+        if (flagged.data.results[0].flagged) {
+            setResults('');
+            setLoading(false);
+            return false;
+        }
+        const flaggedResume = await openai.createModeration({
+            input: resume.description
+        });
+        if (flaggedResume.data.results[0].flagged) {
+            setResults('');
+            setLoading(false);
+            return false;
+        }
+
         const completion = await openai.createChatCompletion({
             model: "gpt-3.5-turbo",
             messages: [
             {
                 role: "system",
                 content: `
-You are helping to write a first-person summary as to why I would be a good fit for a job position.  Use the provided resume and experience to formulate a 3 paragraph response as if you were me.
+You are helping me to write a first-person summary as to why I would be a good fit for a job position.  Use the provided resume and experience to formulate a 2 - 4 sentence summary as if you were me.
 
-Person Resume & Experience: ${resume.description}
+Resume & Experience: ${resume.description}
 `,
             },
             {
